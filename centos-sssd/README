@@ -1,0 +1,11 @@
+This derivative centos:8.4.2105 docker image with sssd package
+can be used for applications that rely on PAM to authenticate to
+LDAP servers, including MS Active Directory. The image requires
+proper /etc/sssd/sssd.conf, /etc/pam.d/system-auth and 
+/etc/ssl/certs/ldap-ca.crt files to be mounted at runtime either 
+via docker run -v option or k8s secret volumes.
+Thus, it is possible to run PAM-dependant application with LDAP
+authentication without commercial Quest software in centos docker
+containers.
+One example of such application is Rstudio non-Pro edition, which
+can only authenticate users via PAM.

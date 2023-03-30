@@ -1,0 +1,298 @@
+Chart:
+  Name: jupyterhub
+  Version: 0.8.2
+Release:
+  Name: jhub
+  Namespace: default
+  Service: Tiller
+auth:
+  admin:
+    access: true
+    users: null
+  dummy:
+    password: null
+  ldap:
+    allowedGroups:
+    - cn=Admins,ou=Security Groups,ou=Groups,dc=example,dc=com
+    - cn=Analytics,ou=Security Groups,ou=Groups,dc=example,dc=com
+    dn:
+      lookup: true
+      search:
+        filter: ({login_attr}={login})
+        password: <in-password-vault>
+        user: k8-svc-ldap
+      templates:
+      - CN={username},OU=Users,DC=example,DC=com
+      user:
+        attribute: sAMAccountName
+        dnAttribute: cn
+        escape: false
+        searchBase: ou=Users,dc=example,dc=com
+    server:
+      address: ldap.example.com
+    user: {}
+  state:
+    enabled: false
+  type: ldap
+  whitelist:
+    users: null
+cull:
+  concurrency: 10
+  enabled: false
+  every: 600
+  maxAge: 0
+  timeout: 3600
+  users: false
+custom: {}
+debug:
+  enabled: false
+hub:
+  allowNamedServers: false
+  annotations: {}
+  baseUrl: /
+  concurrentSpawnLimit: 64
+  consecutiveFailureLimit: 5
+  db:
+    password: null
+    pvc:
+      accessModes:
+      - ReadWriteOnce
+      annotations: {}
+      selector: {}
+      storage: 1Gi
+      storageClassName: null
+      subPath: null
+    type: sqlite-pvc
+    upgrade: null
+    url: null
+  deploymentStrategy:
+    rollingUpdate: null
+    type: Recreate
+  extraConfig:
+    jupyterlab: |
+      c.Spawner.default_url = "/lab"
+  extraContainers: []
+  extraVolumeMounts: []
+  extraVolumes: []
+  fsGid: 1000
+  image:
+    name: jupyterhub/k8s-hub
+    tag: 0.8.2
+  imagePullPolicy: IfNotPresent
+  imagePullSecret:
+    email: null
+    enabled: false
+    password: null
+    registry: null
+    username: null
+  labels: {}
+  networkPolicy:
+    egress:
+    - to:
+      - ipBlock:
+          cidr: 0.0.0.0/0
+    enabled: false
+  nodeSelector: {}
+  pdb:
+    enabled: true
+    minAvailable: 1
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+  service:
+    annotations: {}
+    loadBalancerIP: null
+    ports:
+      nodePort: null
+    type: ClusterIP
+  services: {}
+  uid: 1000
+scheduling:
+  corePods:
+    nodeAffinity:
+      matchNodePurpose: prefer
+  podPriority:
+    defaultPriority: 0
+    enabled: false
+    globalDefault: false
+    userPlaceholderPriority: -10
+  userPlaceholder:
+    enabled: true
+    replicas: 0
+  userPods:
+    nodeAffinity:
+      matchNodePurpose: prefer
+  userScheduler:
+    enabled: false
+    image:
+      name: docker.example.com/google_containers/kube-scheduler-amd64
+      tag: v1.11.2
+    logLevel: 4
+    nodeSelector: {}
+    pdb:
+      enabled: true
+      minAvailable: 1
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
+singleuser:
+  cloudMetadata:
+    enabled: false
+    ip: 169.254.169.254
+  cmd: jupyterhub-singleuser
+  cpu:
+    guarantee: 0.1
+    limit: 16
+  defaultUrl: /lab
+  events: false
+  extraAnnotations: {}
+  extraContainers: []
+  extraEnv: {}
+  extraLabels:
+    hub.jupyter.org/network-access-hub: "true"
+  extraNodeAffinity:
+    preferred: []
+    required: []
+  extraPodAffinity:
+    preferred: []
+    required: []
+  extraPodConfig:
+    securityContext:
+      fsGroup: 100
+  extraPodAntiAffinity:
+    preferred: []
+    required: []
+  extraResource:
+    guarantees:
+      ephemeral-storage: "1000M"
+    limits:
+      ephemeral-storage: "1000M"
+  extraTolerations: []
+  fsGid: 100
+  image:
+    name: nexus.example.com:8443/repository/docker-repo/conda
+    pullPolicy: IfNotPresent
+    tag: "1.13"
+  profileList:
+  - display_name: "conda:1.13"
+    description: "Python-3.7.6"
+    default: true
+  - display_name: "conda:1.14"
+    description: "Python-3.9.6"
+    kubespawner_override:
+      image: nexus.example.com:8443/repository/docker-repo/conda:1.14
+  imagePullSecret:
+    email: null
+    enabled: false
+    registry: null
+    username: null
+  initContainers: []
+  memory:
+    guarantee: 1G
+    limit: 32G
+  networkPolicy:
+    egress:
+    - to:
+      - ipBlock:
+          cidr: 0.0.0.0/0
+          except:
+          - 169.254.169.254/32
+    enabled: false
+  networkTools:
+    image:
+      name: jupyterhub/k8s-network-tools
+      tag: 0.8.2
+  nodeSelector: {}
+  startTimeout: 600
+  storage:
+    capacity: 10Gi
+    dynamic:
+      pvcNameTemplate: claim-{username}{servername}
+      storageAccessModes:
+      - ReadWriteOnce
+      storageClass: null
+      volumeNameTemplate: volume-{username}{servername}
+    extraLabels: {}
+    extraVolumeMounts:
+    - name: crypto
+      mountPath: "/home/crypto"
+    - name: public
+      mountPath: "/home/public"
+    - name: "cloudera-hiveodbc-ini"
+      mountPath: "/opt/cloudera/hiveodbc/lib/64/cloudera.hiveodbc.ini"
+      subPath: "cloudera.hiveodbc.ini"
+      readOnly: true
+    - name: "odbc-ini"
+      mountPath: "/opt/cloudera/hiveodbc/Setup/odbc.ini"
+      subPath: "odbc.ini"
+      readOnly: true
+    - name: "odbcinst-ini"
+      mountPath: "/opt/cloudera/hiveodbc/Setup/odbcinst.ini"
+      subPath: "odbcinst.ini"
+      readOnly: true
+    - name: krb5-conf
+      mountPath: /etc/krb5.conf
+      readOnly: true
+      subPath: krb5.conf
+    - name: keytabs
+      mountPath: /etc/kerberos/keytabs
+      readOnly: true
+    - name: hive-jaas-krb5-conf
+      mountPath: /etc/kerberos/config
+      readOnly: true
+    - name: pyexasol-ini 
+      mountPath: /home/jovyan/.pyexasol.ini
+      subPath: .pyexasol.ini
+      readOnly: true
+    extraVolumes:
+    - name: pyexasol-ini
+      configMap:
+        name: pyexasol-ini
+        optional: true
+    - name: "crypto"
+      nfs:
+        server: 10.1.1.10
+        path: "/crypto_copperfield_core_bi_link/lat"
+    - name: "public"
+      nfs:
+        server: 10.1.1.10
+        path: "/ds_cluster_datasci_1_lat/public"
+    - name: "cloudera-hiveodbc-ini"
+      configMap:
+        name: "cloudera-hiveodbc-ini"
+    - name: "odbc-ini"
+      configMap:
+        name: "odbc-ini"
+        items:
+        - key: "odbc.ini"
+          mode: 0644
+          path: "odbc.ini"
+        optional: false
+    - name: "odbcinst-ini"
+      configMap:
+        name: "odbcinst-ini"
+        items:
+        - key: "odbcinst.ini"
+          mode: 0644
+          path: "odbcinst.ini"
+        optional: false
+    - name: krb5-conf
+      configMap:
+        name: krb5-conf
+    - name: keytabs
+      secret:
+        secretName: keytabs
+        defaultMode: 0640
+    - name: hive-jaas-krb5-conf
+      configMap:
+        name: hive-jaas-krb5-conf
+    homeMountPath: /home/jovyan
+    static:
+      pvcName: null
+      subPath: '{username}'
+    type: dynamic
+  uid: 1000
+

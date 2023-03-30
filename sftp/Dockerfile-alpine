@@ -1,0 +1,11 @@
+FROM alpine:3.12.0
+LABEL "description"="sshd with sftp subsystem"
+LABEL "version"="1.0"
+RUN apk add --no-cache openssh-server
+RUN ssh-keygen -A
+RUN addgroup group
+RUN adduser -G group -D -u 173923 user
+COPY shadow /etc/
+COPY sshd_config /etc/ssh/
+EXPOSE 2222
+CMD /usr/sbin/sshd -D -p 2222

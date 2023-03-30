@@ -1,0 +1,4 @@
+ORACLE_HOME=/oracle
+TNS_ADMIN=/oracle/network/admin
+OCI_LIB=/oracle/instantclient_12_1
+

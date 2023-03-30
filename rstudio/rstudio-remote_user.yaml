@@ -1,0 +1,181 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rstudio-$remote_user
+  labels:
+    user: $remote_user
+spec:
+  selector:
+    app: rstudio-$remote_user
+  ports:
+  - port: 8787
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rstudio-ssl-ingress
+  annotations:
+    ingress.kubernetes.io/ssl-passthrough: "true"
+spec:
+  rules:
+  - host: rstudio.example.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: nginx-rstudio-ldap-ssl-service
+            port:
+              number: 443
+        pathType: ImplementationSpecific
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rstudio-$remote_user
+  labels:
+    app: rstudio-$remote_user
+    user: $remote_user
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rstudio-$remote_user
+  template:
+    metadata:
+      labels:
+        app: rstudio-$remote_user
+        soft: rstudio
+        user: $remote_user
+    spec:
+      containers:
+      - name: rstudio-$remote_user
+        args: ['sh','-c',"sssd -d 0x003 --logger=stderr && sleep 5 && chmod -R 777 /tmp && if [[ ! -d /home/$remote_user ]]; then mkdir -m 700 /home/$remote_user; chown $remote_user:1403112608 /home/$remote_user; fi && /usr/lib/rstudio-server/bin/rserver --server-daemonize 0"]
+        image: nexus.example.com:8443/repository/docker-repo/rstudio-server:2021.09.1-372
+        envFrom:
+        - configMapRef:
+            name: rstudio-env
+        resources:
+          limits:
+            cpu: "16"
+            memory: "32Gi"
+            ephemeral-storage: "1Gi"
+          requests:
+            cpu: "100m"
+            memory: "1Gi"
+            ephemeral-storage: "1Gi"
+        ports:
+        - containerPort: 8787
+        livenessProbe:
+          httpGet:
+            scheme: HTTP
+            path: /
+            port: 8787
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
+        volumeMounts:
+        - mountPath: /etc/sssd/sssd.conf
+          name: sssd-conf
+          subPath: sssd.conf
+          readOnly: true
+        - mountPath: /etc/ssl/certs/ldap-ca.crt
+          name: internal-root-ca
+          subPath: internal-root-ca.crt
+          readOnly: true
+        - mountPath: /etc/pam.d/rstudio
+          name: etc-pam-d-sssd-rstudio
+          subPath: rstudio
+          readOnly: true
+        - mountPath: /etc/pam.d/login
+          name: etc-pam-d-sssd-rstudio
+          subPath: rstudio
+          readOnly: true
+        - mountPath: /etc/pam.d/rstudio-server_allowed_groups
+          name: etc-pamd-rstudio-server-allowed-groups
+          subPath: rstudio-server_allowed_groups
+          readOnly: true
+        - mountPath: /home
+          name: home
+        - mountPath: /home/public
+          name: public
+        - mountPath: /home/shiny
+          name: shiny
+        - mountPath: /data
+          name: storage
+        - mountPath: /home/sftp
+          name: sftp
+        - mountPath: /oracle/network/admin/tnsnames.ora
+          name: tnsnames-ora
+          subPath: tnsnames.ora
+          readOnly: true
+        - mountPath: /etc/rstudio/rsession.conf
+          name: rsession-conf
+          subPath: rsession.conf
+          readOnly: true
+        - mountPath: /etc/odbcinst.ini
+          name: odbcinst-ini
+          subPath: odbcinst.ini
+          readOnly: true
+        - mountPath: /etc/odbc.ini
+          name: odbc-ini
+          subPath: odbc.ini
+          readOnly: true
+        - mountPath: /opt/cloudera/hiveodbc/lib/64/cloudera.hiveodbc.ini
+          name: r-cloudera-hiveodbc-ini
+          subPath: cloudera.hiveodbc.ini
+          readOnly: true
+      topologySpreadConstraints:
+      - maxSkew: 2
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            soft: rstudio
+      volumes:
+      - secret:
+          secretName: sssd-conf
+          defaultMode: 0600
+        name: sssd-conf
+      - configMap:
+          name: internal-root-ca
+        name: internal-root-ca
+      - configMap:
+          name: etc-pam-d-sssd-rstudio
+        name: etc-pam-d-sssd-rstudio
+      - configMap:
+          name: etc-pam-d-rstudio-server-allowed-groups
+        name: etc-pamd-rstudio-server-allowed-groups
+      - nfs:
+          path: /public
+          server: 10.1.1.10
+        name: public
+      - nfs:
+          path: /shiny
+          server: 10.1.1.12
+        name: shiny
+      - nfs:
+          path: /home
+          server: 10.1.1.13
+        name: home
+      - name: storage
+        nfs:
+          server: 10.1.1.14
+          path: /data
+      - name: sftp
+        nfs:
+          server: 10.1.1.15
+          path: /sftp
+      - configMap:
+          name: tnsnames
+        name: tnsnames-ora
+      - configMap:
+          name: rsession
+        name: rsession-conf
+      - configMap:
+          name: r-odbcinst-ini
+        name: odbcinst-ini
+      - configMap:
+          name: r-odbc-ini
+        name: odbc-ini
+      - configMap:
+          name: r-cloudera-hiveodbc-ini
+        name: r-cloudera-hiveodbc-ini

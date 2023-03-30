@@ -1,0 +1,11 @@
+Port 2222
+AuthorizedKeysFile      .ssh/authorized_keys
+UsePAM yes
+AllowTcpForwarding no
+GatewayPorts no
+X11Forwarding no
+Subsystem       sftp    internal-sftp
+Match User user
+       ChrootDirectory /home/%u
+       ForceCommand internal-sftp
+

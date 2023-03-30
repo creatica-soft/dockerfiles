@@ -1,0 +1,2 @@
+#!/usr/bin/bash
+kubectl get deployments.apps |egrep ^rstudio|awk '{print $1}'|cut -f2- -d"-"

@@ -1,0 +1,5 @@
+#!/usr/bin/bash
+if [[ $# < 1 || $# > 2 ]]; then echo -e "isUserDisabled <username>\n"; exit; fi
+USR=`ldapsearch -x -W "(&(sAMAccountName=$1)(userAccountControl=514))" sAMAccountName|egrep ^sAMAccountName|awk '{print $2}'`
+if [[ "$1" == "$USR" ]]; then echo "yes"; else echo "no"; fi
+
